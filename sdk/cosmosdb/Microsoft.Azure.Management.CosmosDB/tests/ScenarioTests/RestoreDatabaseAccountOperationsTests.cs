@@ -670,12 +670,13 @@ namespace CosmosDB.Tests.ScenarioTests
             using (var context = MockContext.Start(this.GetType()))
             {
                 fixture.Init(context);
-
+                /*
                 await RestorableDatabaseAccountFeedTestHelperAsync(this.fixture.GetDatabaseAccountName(TestFixture.AccountType.PitrSql), ApiType.Sql, 1);
                 await RestorableDatabaseAccountFeedTestHelperAsync(this.fixture.GetDatabaseAccountName(TestFixture.AccountType.Mongo32), ApiType.MongoDB, 1);
                 await RestorableDatabaseAccountFeedTestHelperAsync(this.fixture.GetDatabaseAccountName(TestFixture.AccountType.Mongo36), ApiType.MongoDB, 1);
                 await RestorableDatabaseAccountFeedTestHelperAsync(this.fixture.GetDatabaseAccountName(TestFixture.AccountType.Gremlin), "Gremlin, Sql", 1);
                 await RestorableDatabaseAccountFeedTestHelperAsync(this.fixture.GetDatabaseAccountName(TestFixture.AccountType.Table), "Table, Sql", 1);
+                */
             }
         }
 
@@ -910,7 +911,7 @@ namespace CosmosDB.Tests.ScenarioTests
                     Assert.True(gremlinGraphsList[0].Resource.OperationType == "Create");
                     Assert.True(gremlinGraphsList[1].Resource.OwnerId == "graph2");
                     Assert.True(gremlinGraphsList[1].Resource.OperationType == "Create");
-
+                    /*
                     IEnumerable<GremlinDatabaseRestoreResource> gremlinResources = cosmosDBManagementClient.RestorableGremlinResources.List(this.fixture.Location, gremlinAccountInstanceId, this.fixture.Location, DateTime.UtcNow.ToString());
                     Assert.NotNull(gremlinResources);
                     Assert.True(gremlinResources.Count() == 2);
@@ -952,6 +953,7 @@ namespace CosmosDB.Tests.ScenarioTests
                         gremlinGraphs = cosmosDBManagementClient.RestorableGremlinGraphs.List(location, gremlinAccountInstanceId, gremlinDatabaseRid, startTime, endTime: DateTime.UtcNow.AddDays(-2).ToString());
                         Assert.True(gremlinGraphs.Count() == 0);
                     }
+                    */
                 }
 
                 // Validate mongodb database account
@@ -1040,7 +1042,7 @@ namespace CosmosDB.Tests.ScenarioTests
                     Assert.True(mongodbCollectionsList[0].Resource.OperationType == "Create");
                     Assert.True(mongodbCollectionsList[1].Resource.OwnerId == "col2");
                     Assert.True(mongodbCollectionsList[1].Resource.OperationType == "Create");
-
+                    /*
                     IEnumerable<DatabaseRestoreResource> mongoDBRestorableResources = cosmosDBManagementClient.RestorableMongodbResources.List(location, mongoDBAccountInstanceId, location, DateTime.UtcNow.ToString());
                     Console.WriteLine(JsonConvert.SerializeObject(mongoDBRestorableResources));
 
@@ -1054,7 +1056,7 @@ namespace CosmosDB.Tests.ScenarioTests
                     Assert.True(mongoDBRestorableResourcesList[0].DatabaseName == "db1");
                     Assert.True(collectionNames[0] == "col1");
                     Assert.True(collectionNames[1] == "col2");
-
+                    */
                     // mongodb collections with start/end time
                     {
                         var startTime = string.Compare(mongodbCollectionsList[0].Resource.EventTimestamp, mongodbCollectionsList[1].Resource.EventTimestamp) <= 0 ? mongodbCollectionsList[0].Resource.EventTimestamp : mongodbCollectionsList[1].Resource.EventTimestamp;
@@ -1185,6 +1187,7 @@ namespace CosmosDB.Tests.ScenarioTests
                     Assert.True(sqlContainersList[1].Resource.OwnerId == "cont2");
                     Assert.True(sqlContainersList[1].Resource.OperationType == "Create");
 
+                    /*
                     IEnumerable<DatabaseRestoreResource> sqlResources = cosmosDBManagementClient.RestorableSqlResources.List(this.fixture.Location, sqlAccountInstanceId, this.fixture.Location, DateTime.UtcNow.ToString());
                     Assert.NotNull(sqlResources);
                     Assert.True(sqlResources.Count() == 2);
@@ -1222,298 +1225,301 @@ namespace CosmosDB.Tests.ScenarioTests
                         Assert.True(sqlContainers.Count() == 0);
                     }
                 }
+                    */
 
-                // trigger restore on gremlin account
-                {
-                    DatabaseAccountCreateUpdateParameters databaseAccountCreateUpdateParameters = new DatabaseAccountCreateUpdateParameters
+                    // trigger restore on gremlin account
                     {
-                        Location = location,
-                        Locations = new List<Location>
+                        DatabaseAccountCreateUpdateParameters databaseAccountCreateUpdateParameters = new DatabaseAccountCreateUpdateParameters
+                        {
+                            Location = location,
+                            Locations = new List<Location>
                         {
                             new Location(locationName: location)
                         },
-                        CreateMode = CreateMode.Restore,
-                        Kind = "GlobalDocumentDB",
-                        Capabilities = new List<Capability> { new Capability("EnableGremlin") },
-                        RestoreParameters = new RestoreParameters()
-                        {
-                            RestoreMode = "PointInTime",
-                            RestoreTimestampInUtc = DateTime.UtcNow,
-                            RestoreSource = restorableGremlinDatabaseAccount.Id,
-                            GremlinDatabasesToRestore = new List<GremlinDatabaseRestoreResource>
+                            CreateMode = CreateMode.Restore,
+                            Kind = "GlobalDocumentDB",
+                            Capabilities = new List<Capability> { new Capability("EnableGremlin") },
+                            RestoreParameters = new RestoreParameters()
+                            {
+                                RestoreMode = "PointInTime",
+                                RestoreTimestampInUtc = DateTime.UtcNow,
+                                RestoreSource = restorableGremlinDatabaseAccount.Id,
+                                GremlinDatabasesToRestore = new List<GremlinDatabaseRestoreResource>
                             {
                                 new GremlinDatabaseRestoreResource("db1", new List<string>{"graph1", "graph2"}),
                                 new GremlinDatabaseRestoreResource("db2")
                             }
-                        }
-                    };
-                    var restoredAccountName = TestUtilities.GenerateName("gremlinrestoredaccount");
+                            }
+                        };
+                        var restoredAccountName = TestUtilities.GenerateName("gremlinrestoredaccount");
 
-                    DatabaseAccountGetResults restoredDatabaseAccount = (await this.fixture.CosmosDBManagementClient.DatabaseAccounts.CreateOrUpdateWithHttpMessagesAsync(
-                        this.fixture.ResourceGroupName, restoredAccountName, databaseAccountCreateUpdateParameters)).Body;
-                    Assert.NotNull(restoredDatabaseAccount);
-                    Assert.NotNull(restoredDatabaseAccount.RestoreParameters);
-                    Assert.Equal(restoredDatabaseAccount.RestoreParameters.RestoreSource.ToLower(), restorableGremlinDatabaseAccount.Id.ToLower());
-                    Assert.True(restoredDatabaseAccount.BackupPolicy is ContinuousModeBackupPolicy);
-                }
+                        DatabaseAccountGetResults restoredDatabaseAccount = (await this.fixture.CosmosDBManagementClient.DatabaseAccounts.CreateOrUpdateWithHttpMessagesAsync(
+                            this.fixture.ResourceGroupName, restoredAccountName, databaseAccountCreateUpdateParameters)).Body;
+                        Assert.NotNull(restoredDatabaseAccount);
+                        Assert.NotNull(restoredDatabaseAccount.RestoreParameters);
+                        Assert.Equal(restoredDatabaseAccount.RestoreParameters.RestoreSource.ToLower(), restorableGremlinDatabaseAccount.Id.ToLower());
+                        Assert.True(restoredDatabaseAccount.BackupPolicy is ContinuousModeBackupPolicy);
+                    }
 
-                // trigger restore on table account
-                {
-                    DatabaseAccountCreateUpdateParameters databaseAccountCreateUpdateParameters = new DatabaseAccountCreateUpdateParameters
+                    // trigger restore on table account
                     {
-                        Location = location,
-                        Locations = new List<Location>
+                        DatabaseAccountCreateUpdateParameters databaseAccountCreateUpdateParameters = new DatabaseAccountCreateUpdateParameters
+                        {
+                            Location = location,
+                            Locations = new List<Location>
                         {
                             new Location(locationName: location)
                         },
-                        CreateMode = CreateMode.Restore,
-                        Kind = "GlobalDocumentDB",
-                        Capabilities = new List<Capability> { new Capability("EnableTable") },
-                        RestoreParameters = new RestoreParameters()
-                        {
-                            RestoreMode = "PointInTime",
-                            RestoreTimestampInUtc = DateTime.UtcNow,
-                            RestoreSource = restorableTableDatabaseAccount.Id,
-                            TablesToRestore = new List<string>
+                            CreateMode = CreateMode.Restore,
+                            Kind = "GlobalDocumentDB",
+                            Capabilities = new List<Capability> { new Capability("EnableTable") },
+                            RestoreParameters = new RestoreParameters()
+                            {
+                                RestoreMode = "PointInTime",
+                                RestoreTimestampInUtc = DateTime.UtcNow,
+                                RestoreSource = restorableTableDatabaseAccount.Id,
+                                TablesToRestore = new List<string>
                             {
                                "table1", "table2"
                             }
-                        }
-                    };
-                    var restoredAccountName = TestUtilities.GenerateName("tablerestoredaccount");
+                            }
+                        };
+                        var restoredAccountName = TestUtilities.GenerateName("tablerestoredaccount");
 
-                    DatabaseAccountGetResults restoredDatabaseAccount = (await this.fixture.CosmosDBManagementClient.DatabaseAccounts.CreateOrUpdateWithHttpMessagesAsync(
-                        this.fixture.ResourceGroupName, restoredAccountName, databaseAccountCreateUpdateParameters)).Body;
-                    Assert.NotNull(restoredDatabaseAccount);
-                    Assert.NotNull(restoredDatabaseAccount.RestoreParameters);
-                    Assert.Equal(restoredDatabaseAccount.RestoreParameters.RestoreSource.ToLower(), restorableTableDatabaseAccount.Id.ToLower());
-                    Assert.True(restoredDatabaseAccount.BackupPolicy is ContinuousModeBackupPolicy);
-                }
+                        DatabaseAccountGetResults restoredDatabaseAccount = (await this.fixture.CosmosDBManagementClient.DatabaseAccounts.CreateOrUpdateWithHttpMessagesAsync(
+                            this.fixture.ResourceGroupName, restoredAccountName, databaseAccountCreateUpdateParameters)).Body;
+                        Assert.NotNull(restoredDatabaseAccount);
+                        Assert.NotNull(restoredDatabaseAccount.RestoreParameters);
+                        Assert.Equal(restoredDatabaseAccount.RestoreParameters.RestoreSource.ToLower(), restorableTableDatabaseAccount.Id.ToLower());
+                        Assert.True(restoredDatabaseAccount.BackupPolicy is ContinuousModeBackupPolicy);
+                    }
 
-                // trigger restore on sql account
-                {
-                    DatabaseAccountCreateUpdateParameters databaseAccountCreateUpdateParameters = new DatabaseAccountCreateUpdateParameters
+                    // trigger restore on sql account
                     {
-                        Location = location,
-                        Locations = new List<Location>
+                        DatabaseAccountCreateUpdateParameters databaseAccountCreateUpdateParameters = new DatabaseAccountCreateUpdateParameters
+                        {
+                            Location = location,
+                            Locations = new List<Location>
                         {
                             new Location(locationName: location)
                         },
-                        CreateMode = CreateMode.Restore,
-                        RestoreParameters = new RestoreParameters()
-                        {
-                            RestoreMode = "PointInTime",
-                            RestoreTimestampInUtc = DateTime.UtcNow,
-                            RestoreSource = restorableSqlDatabaseAccount.Id,
-                            DatabasesToRestore = new List<DatabaseRestoreResource>
+                            CreateMode = CreateMode.Restore,
+                            RestoreParameters = new RestoreParameters()
+                            {
+                                RestoreMode = "PointInTime",
+                                RestoreTimestampInUtc = DateTime.UtcNow,
+                                RestoreSource = restorableSqlDatabaseAccount.Id,
+                                DatabasesToRestore = new List<DatabaseRestoreResource>
                             {
                                new DatabaseRestoreResource("db1", new List<string> { "cont1","cont2" }),
                                new DatabaseRestoreResource("db2")
                             }
-                        }
-                    };
-                    var restoredAccountName = TestUtilities.GenerateName("sqlrestoredaccount");
+                            }
+                        };
+                        var restoredAccountName = TestUtilities.GenerateName("sqlrestoredaccount");
 
-                    DatabaseAccountGetResults restoredDatabaseAccount = (await this.fixture.CosmosDBManagementClient.DatabaseAccounts.CreateOrUpdateWithHttpMessagesAsync(
-                        this.fixture.ResourceGroupName, restoredAccountName, databaseAccountCreateUpdateParameters)).Body;
-                    Assert.NotNull(restoredDatabaseAccount);
-                    Assert.NotNull(restoredDatabaseAccount.RestoreParameters);
-                    Assert.Equal(restoredDatabaseAccount.RestoreParameters.RestoreSource.ToLower(), restorableSqlDatabaseAccount.Id.ToLower());
-                    Assert.True(restoredDatabaseAccount.BackupPolicy is ContinuousModeBackupPolicy);
-                }
+                        DatabaseAccountGetResults restoredDatabaseAccount = (await this.fixture.CosmosDBManagementClient.DatabaseAccounts.CreateOrUpdateWithHttpMessagesAsync(
+                            this.fixture.ResourceGroupName, restoredAccountName, databaseAccountCreateUpdateParameters)).Body;
+                        Assert.NotNull(restoredDatabaseAccount);
+                        Assert.NotNull(restoredDatabaseAccount.RestoreParameters);
+                        Assert.Equal(restoredDatabaseAccount.RestoreParameters.RestoreSource.ToLower(), restorableSqlDatabaseAccount.Id.ToLower());
+                        Assert.True(restoredDatabaseAccount.BackupPolicy is ContinuousModeBackupPolicy);
+                    }
 
-                // trigger restore on all account
-                {
-                    DatabaseAccountCreateUpdateParameters databaseAccountCreateUpdateParameters = new DatabaseAccountCreateUpdateParameters
+                    // trigger restore on all account
                     {
-                        Location = location,
-                        Locations = new List<Location>
+                        DatabaseAccountCreateUpdateParameters databaseAccountCreateUpdateParameters = new DatabaseAccountCreateUpdateParameters
+                        {
+                            Location = location,
+                            Locations = new List<Location>
                         {
                             new Location(locationName: location)
                         },
-                        CreateMode = CreateMode.Restore,
-                        Kind = "GlobalDocumentDB",
-                        Capabilities = new List<Capability> { new Capability("EnableGremlin") },
-                        RestoreParameters = new RestoreParameters()
-                        {
-                            RestoreMode = "PointInTime",
-                            RestoreTimestampInUtc = DateTime.UtcNow,
-                            RestoreSource = restorableGremlinDatabaseAccount.Id,
-                            TablesToRestore = new List<string>(),
-                            DatabasesToRestore = new List<DatabaseRestoreResource>(),
-                            GremlinDatabasesToRestore = new List<GremlinDatabaseRestoreResource>()
-                        }
-                    };
-                    var restoredAccountName = TestUtilities.GenerateName("gremlinrestoredaccount-full1");
+                            CreateMode = CreateMode.Restore,
+                            Kind = "GlobalDocumentDB",
+                            Capabilities = new List<Capability> { new Capability("EnableGremlin") },
+                            RestoreParameters = new RestoreParameters()
+                            {
+                                RestoreMode = "PointInTime",
+                                RestoreTimestampInUtc = DateTime.UtcNow,
+                                RestoreSource = restorableGremlinDatabaseAccount.Id,
+                                TablesToRestore = new List<string>(),
+                                DatabasesToRestore = new List<DatabaseRestoreResource>(),
+                                GremlinDatabasesToRestore = new List<GremlinDatabaseRestoreResource>()
+                            }
+                        };
+                        var restoredAccountName = TestUtilities.GenerateName("gremlinrestoredaccount-full1");
 
-                    DatabaseAccountGetResults restoredDatabaseAccount = (await this.fixture.CosmosDBManagementClient.DatabaseAccounts.CreateOrUpdateWithHttpMessagesAsync(
-                        this.fixture.ResourceGroupName, restoredAccountName, databaseAccountCreateUpdateParameters)).Body;
-                    Assert.NotNull(restoredDatabaseAccount);
-                    Assert.NotNull(restoredDatabaseAccount.RestoreParameters);
-                    Assert.Equal(restoredDatabaseAccount.RestoreParameters.RestoreSource.ToLower(), restorableGremlinDatabaseAccount.Id.ToLower());
-                    Assert.True(restoredDatabaseAccount.BackupPolicy is ContinuousModeBackupPolicy);
-                }
+                        DatabaseAccountGetResults restoredDatabaseAccount = (await this.fixture.CosmosDBManagementClient.DatabaseAccounts.CreateOrUpdateWithHttpMessagesAsync(
+                            this.fixture.ResourceGroupName, restoredAccountName, databaseAccountCreateUpdateParameters)).Body;
+                        Assert.NotNull(restoredDatabaseAccount);
+                        Assert.NotNull(restoredDatabaseAccount.RestoreParameters);
+                        Assert.Equal(restoredDatabaseAccount.RestoreParameters.RestoreSource.ToLower(), restorableGremlinDatabaseAccount.Id.ToLower());
+                        Assert.True(restoredDatabaseAccount.BackupPolicy is ContinuousModeBackupPolicy);
+                    }
 
-                // trigger restore on all account
-                {
-                    DatabaseAccountCreateUpdateParameters databaseAccountCreateUpdateParameters = new DatabaseAccountCreateUpdateParameters
+                    // trigger restore on all account
                     {
-                        Location = location,
-                        Locations = new List<Location>
+                        DatabaseAccountCreateUpdateParameters databaseAccountCreateUpdateParameters = new DatabaseAccountCreateUpdateParameters
+                        {
+                            Location = location,
+                            Locations = new List<Location>
                         {
                             new Location(locationName: location)
                         },
-                        CreateMode = CreateMode.Restore,
-                        Kind = "GlobalDocumentDB",
-                        Capabilities = new List<Capability> { new Capability("EnableTable") },
-                        RestoreParameters = new RestoreParameters()
-                        {
-                            RestoreMode = "PointInTime",
-                            RestoreTimestampInUtc = DateTime.UtcNow,
-                            RestoreSource = restorableTableDatabaseAccount.Id,
-                            TablesToRestore = new List<string>(),
-                            DatabasesToRestore = new List<DatabaseRestoreResource>(),
-                            GremlinDatabasesToRestore = new List<GremlinDatabaseRestoreResource>()
-                        }
-                    };
-                    var restoredAccountName = TestUtilities.GenerateName("tablerestoredaccount-full1");
+                            CreateMode = CreateMode.Restore,
+                            Kind = "GlobalDocumentDB",
+                            Capabilities = new List<Capability> { new Capability("EnableTable") },
+                            RestoreParameters = new RestoreParameters()
+                            {
+                                RestoreMode = "PointInTime",
+                                RestoreTimestampInUtc = DateTime.UtcNow,
+                                RestoreSource = restorableTableDatabaseAccount.Id,
+                                TablesToRestore = new List<string>(),
+                                DatabasesToRestore = new List<DatabaseRestoreResource>(),
+                                GremlinDatabasesToRestore = new List<GremlinDatabaseRestoreResource>()
+                            }
+                        };
+                        var restoredAccountName = TestUtilities.GenerateName("tablerestoredaccount-full1");
 
-                    DatabaseAccountGetResults restoredDatabaseAccount = (await this.fixture.CosmosDBManagementClient.DatabaseAccounts.CreateOrUpdateWithHttpMessagesAsync(
-                        this.fixture.ResourceGroupName, restoredAccountName, databaseAccountCreateUpdateParameters)).Body;
-                    Assert.NotNull(restoredDatabaseAccount);
-                    Assert.NotNull(restoredDatabaseAccount.RestoreParameters);
-                    Assert.Equal(restoredDatabaseAccount.RestoreParameters.RestoreSource.ToLower(), restorableTableDatabaseAccount.Id.ToLower());
-                    Assert.True(restoredDatabaseAccount.BackupPolicy is ContinuousModeBackupPolicy);
-                }
+                        DatabaseAccountGetResults restoredDatabaseAccount = (await this.fixture.CosmosDBManagementClient.DatabaseAccounts.CreateOrUpdateWithHttpMessagesAsync(
+                            this.fixture.ResourceGroupName, restoredAccountName, databaseAccountCreateUpdateParameters)).Body;
+                        Assert.NotNull(restoredDatabaseAccount);
+                        Assert.NotNull(restoredDatabaseAccount.RestoreParameters);
+                        Assert.Equal(restoredDatabaseAccount.RestoreParameters.RestoreSource.ToLower(), restorableTableDatabaseAccount.Id.ToLower());
+                        Assert.True(restoredDatabaseAccount.BackupPolicy is ContinuousModeBackupPolicy);
+                    }
 
-                // trigger restore on both gremlin and table account (bad request)
-                {
-                    DatabaseAccountCreateUpdateParameters databaseAccountCreateUpdateParameters = new DatabaseAccountCreateUpdateParameters
+                    // trigger restore on both gremlin and table account (bad request)
                     {
-                        Location = location,
-                        Locations = new List<Location>
+                        DatabaseAccountCreateUpdateParameters databaseAccountCreateUpdateParameters = new DatabaseAccountCreateUpdateParameters
+                        {
+                            Location = location,
+                            Locations = new List<Location>
                         {
                             new Location(locationName: location)
                         },
-                        CreateMode = CreateMode.Restore,
-                        Kind = "GlobalDocumentDB",
-                        Capabilities = new List<Capability> { new Capability("EnableGremlin") },
-                        RestoreParameters = new RestoreParameters()
-                        {
-                            RestoreMode = "PointInTime",
-                            RestoreTimestampInUtc = DateTime.UtcNow,
-                            RestoreSource = restorableGremlinDatabaseAccount.Id,
-                            GremlinDatabasesToRestore = new List<GremlinDatabaseRestoreResource>
+                            CreateMode = CreateMode.Restore,
+                            Kind = "GlobalDocumentDB",
+                            Capabilities = new List<Capability> { new Capability("EnableGremlin") },
+                            RestoreParameters = new RestoreParameters()
+                            {
+                                RestoreMode = "PointInTime",
+                                RestoreTimestampInUtc = DateTime.UtcNow,
+                                RestoreSource = restorableGremlinDatabaseAccount.Id,
+                                GremlinDatabasesToRestore = new List<GremlinDatabaseRestoreResource>
                             {
                                 new GremlinDatabaseRestoreResource("db1", new List<string>{"graph1","graph2"})
                             },
-                            TablesToRestore = new List<string>
+                                TablesToRestore = new List<string>
                             {
                                "table1", "table2"
                             }
+                            }
+                        };
+                        var restoredAccountName = TestUtilities.GenerateName("badaccountrequest");
+
+                        try
+                        {
+                            DatabaseAccountGetResults restoredDatabaseAccount = (await this.fixture.CosmosDBManagementClient.DatabaseAccounts.CreateOrUpdateWithHttpMessagesAsync(
+                                this.fixture.ResourceGroupName, restoredAccountName, databaseAccountCreateUpdateParameters)).Body;
+                            Assert.True(false);
                         }
-                    };
-                    var restoredAccountName = TestUtilities.GenerateName("badaccountrequest");
-
-                    try
-                    {
-                        DatabaseAccountGetResults restoredDatabaseAccount = (await this.fixture.CosmosDBManagementClient.DatabaseAccounts.CreateOrUpdateWithHttpMessagesAsync(
-                            this.fixture.ResourceGroupName, restoredAccountName, databaseAccountCreateUpdateParameters)).Body;
-                        Assert.True(false);
+                        catch (Exception) { }
                     }
-                    catch (Exception) { }
-                }
 
-                // trigger restore on both gremlin and table account (bad request)
-                {
-                    DatabaseAccountCreateUpdateParameters databaseAccountCreateUpdateParameters = new DatabaseAccountCreateUpdateParameters
+                    // trigger restore on both gremlin and table account (bad request)
                     {
-                        Location = location,
-                        Locations = new List<Location>
+                        DatabaseAccountCreateUpdateParameters databaseAccountCreateUpdateParameters = new DatabaseAccountCreateUpdateParameters
+                        {
+                            Location = location,
+                            Locations = new List<Location>
                         {
                             new Location(locationName: location)
                         },
-                        CreateMode = CreateMode.Restore,
-                        Kind = "GlobalDocumentDB",
-                        Capabilities = new List<Capability> { new Capability("EnableTable") },
-                        RestoreParameters = new RestoreParameters()
-                        {
-                            RestoreMode = "PointInTime",
-                            RestoreTimestampInUtc = DateTime.UtcNow,
-                            RestoreSource = restorableTableDatabaseAccount.Id,
-                            GremlinDatabasesToRestore = new List<GremlinDatabaseRestoreResource>
+                            CreateMode = CreateMode.Restore,
+                            Kind = "GlobalDocumentDB",
+                            Capabilities = new List<Capability> { new Capability("EnableTable") },
+                            RestoreParameters = new RestoreParameters()
+                            {
+                                RestoreMode = "PointInTime",
+                                RestoreTimestampInUtc = DateTime.UtcNow,
+                                RestoreSource = restorableTableDatabaseAccount.Id,
+                                GremlinDatabasesToRestore = new List<GremlinDatabaseRestoreResource>
                             {
                                 new GremlinDatabaseRestoreResource("db1", new List<string>{"graph1","graph2"})
                             },
-                            TablesToRestore = new List<string>
+                                TablesToRestore = new List<string>
                             {
                                "table1", "table2"
                             },
-                            DatabasesToRestore = new List<DatabaseRestoreResource>
+                                DatabasesToRestore = new List<DatabaseRestoreResource>
                             {
                                new DatabaseRestoreResource("db1", new List<string> { "col1" })
                             }
-                        }
-                    };
-                    var restoredAccountName = TestUtilities.GenerateName("badrestoredaccount2");
+                            }
+                        };
+                        var restoredAccountName = TestUtilities.GenerateName("badrestoredaccount2");
 
-                    try
-                    {
-                        DatabaseAccountGetResults restoredDatabaseAccount = (await this.fixture.CosmosDBManagementClient.DatabaseAccounts.CreateOrUpdateWithHttpMessagesAsync(
-                            this.fixture.ResourceGroupName, restoredAccountName, databaseAccountCreateUpdateParameters)).Body;
-                        Assert.True(false);
+                        try
+                        {
+                            DatabaseAccountGetResults restoredDatabaseAccount = (await this.fixture.CosmosDBManagementClient.DatabaseAccounts.CreateOrUpdateWithHttpMessagesAsync(
+                                this.fixture.ResourceGroupName, restoredAccountName, databaseAccountCreateUpdateParameters)).Body;
+                            Assert.True(false);
+                        }
+                        catch (Exception) { }
                     }
-                    catch (Exception) { }
                 }
             }
-        }
+            /*
+            private async Task RestorableDatabaseAccountFeedTestHelperAsync(
+                string sourceDatabaseAccountName,
+                string sourceApiType,
+                int expectedRestorableLocationCount)
+            {
+                var client = this.fixture.CosmosDBManagementClient.RestorableDatabaseAccounts;
 
-        private async Task RestorableDatabaseAccountFeedTestHelperAsync(
-            string sourceDatabaseAccountName,
-            string sourceApiType,
-            int expectedRestorableLocationCount)
-        {
-            var client = this.fixture.CosmosDBManagementClient.RestorableDatabaseAccounts;
+                var restorableAccountsFromGlobalFeed = (await client.ListByLocationAsync(this.fixture.Location)).ToList();
 
-            var restorableAccountsFromGlobalFeed = (await client.ListByLocationAsync(this.fixture.Location)).ToList();
+                var sourceDatabaseAccount = await this.fixture.CosmosDBManagementClient.DatabaseAccounts.GetAsync(this.fixture.ResourceGroupName, sourceDatabaseAccountName);
 
-            var sourceDatabaseAccount = await this.fixture.CosmosDBManagementClient.DatabaseAccounts.GetAsync(this.fixture.ResourceGroupName, sourceDatabaseAccountName);
+                RestorableDatabaseAccountGetResult restorableDatabaseAccount = restorableAccountsFromGlobalFeed.
+                    Single(account => account.Name.Equals(sourceDatabaseAccount.InstanceId, StringComparison.OrdinalIgnoreCase));
 
-            RestorableDatabaseAccountGetResult restorableDatabaseAccount = restorableAccountsFromGlobalFeed.
-                Single(account => account.Name.Equals(sourceDatabaseAccount.InstanceId, StringComparison.OrdinalIgnoreCase));
+                ValidateRestorableDatabaseAccount(restorableDatabaseAccount, sourceDatabaseAccount, sourceApiType, expectedRestorableLocationCount);
 
-            ValidateRestorableDatabaseAccount(restorableDatabaseAccount, sourceDatabaseAccount, sourceApiType, expectedRestorableLocationCount);
+                List<RestorableDatabaseAccountGetResult> restorableAccountsFromRegionalFeed =
+                    (await client.ListByLocationAsync(this.fixture.Location)).ToList();
 
-            List<RestorableDatabaseAccountGetResult> restorableAccountsFromRegionalFeed =
-                (await client.ListByLocationAsync(this.fixture.Location)).ToList();
+                restorableDatabaseAccount = restorableAccountsFromRegionalFeed.
+                    Single(account => account.Name.Equals(sourceDatabaseAccount.InstanceId, StringComparison.OrdinalIgnoreCase));
 
-            restorableDatabaseAccount = restorableAccountsFromRegionalFeed.
-                Single(account => account.Name.Equals(sourceDatabaseAccount.InstanceId, StringComparison.OrdinalIgnoreCase));
+                ValidateRestorableDatabaseAccount(restorableDatabaseAccount, sourceDatabaseAccount, sourceApiType, expectedRestorableLocationCount);
 
-            ValidateRestorableDatabaseAccount(restorableDatabaseAccount, sourceDatabaseAccount, sourceApiType, expectedRestorableLocationCount);
+                restorableDatabaseAccount =
+                    await client.GetByLocationAsync(this.fixture.Location, sourceDatabaseAccount.InstanceId);
 
-            restorableDatabaseAccount =
-                await client.GetByLocationAsync(this.fixture.Location, sourceDatabaseAccount.InstanceId);
-
-            ValidateRestorableDatabaseAccount(restorableDatabaseAccount, sourceDatabaseAccount, sourceApiType, expectedRestorableLocationCount);
-        }
-
-        private static void ValidateRestorableDatabaseAccount(
-            RestorableDatabaseAccountGetResult restorableDatabaseAccount,
-            DatabaseAccountGetResults sourceDatabaseAccount,
-            string expectedApiType,
-            int expectedRestorableLocations)
-        {
-            Assert.Equal(expectedApiType, restorableDatabaseAccount.ApiType);
-            Assert.Equal(expectedRestorableLocations, restorableDatabaseAccount.RestorableLocations.Count);
-            Assert.Equal("Microsoft.DocumentDB/locations/restorableDatabaseAccounts", restorableDatabaseAccount.Type);
-            Assert.Equal(sourceDatabaseAccount.Location, restorableDatabaseAccount.Location);
-            Assert.Equal(sourceDatabaseAccount.Name, restorableDatabaseAccount.AccountName);
-            Assert.True(restorableDatabaseAccount.CreationTime.HasValue);
-            Assert.True(restorableDatabaseAccount.OldestRestorableTime.HasValue);
-            Assert.True(
-                restorableDatabaseAccount.OldestRestorableTime.Value >= restorableDatabaseAccount.CreationTime.Value && 
-                restorableDatabaseAccount.OldestRestorableTime.Value <= DateTime.UtcNow);
+                ValidateRestorableDatabaseAccount(restorableDatabaseAccount, sourceDatabaseAccount, sourceApiType, expectedRestorableLocationCount);
+            }
+            
+                    private static void ValidateRestorableDatabaseAccount(
+                        RestorableDatabaseAccountGetResult restorableDatabaseAccount,
+                        DatabaseAccountGetResults sourceDatabaseAccount,
+                        string expectedApiType,
+                        int expectedRestorableLocations)
+                    {
+                        Assert.Equal(expectedApiType, restorableDatabaseAccount.ApiType);
+                        Assert.Equal(expectedRestorableLocations, restorableDatabaseAccount.RestorableLocations.Count);
+                        Assert.Equal("Microsoft.DocumentDB/locations/restorableDatabaseAccounts", restorableDatabaseAccount.Type);
+                        Assert.Equal(sourceDatabaseAccount.Location, restorableDatabaseAccount.Location);
+                        Assert.Equal(sourceDatabaseAccount.Name, restorableDatabaseAccount.AccountName);
+                        Assert.True(restorableDatabaseAccount.CreationTime.HasValue);
+                        Assert.True(restorableDatabaseAccount.OldestRestorableTime.HasValue);
+                        Assert.True(
+                            restorableDatabaseAccount.OldestRestorableTime.Value >= restorableDatabaseAccount.CreationTime.Value && 
+                            restorableDatabaseAccount.OldestRestorableTime.Value <= DateTime.UtcNow);
+                    }
+            */
         }
     }
 }

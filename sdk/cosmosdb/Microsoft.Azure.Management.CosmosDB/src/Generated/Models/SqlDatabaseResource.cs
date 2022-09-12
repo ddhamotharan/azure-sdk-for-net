@@ -31,11 +31,11 @@ namespace Microsoft.Azure.Management.CosmosDB.Models
         /// Initializes a new instance of the SqlDatabaseResource class.
         /// </summary>
         /// <param name="id">Name of the Cosmos DB SQL database</param>
-        /// <param name="restoreParameters">The standard JSON format of a
-        /// container</param>
-        /// <param name="createMode">The standard JSON format of a container.
-        /// Possible values include: 'Default', 'Restore'</param>
-        public SqlDatabaseResource(string id, RestoreParameters restoreParameters = default(RestoreParameters), string createMode = default(string))
+        /// <param name="restoreParameters">Parameters to indicate the
+        /// information about the restore</param>
+        /// <param name="createMode">Enum to indicate the mode of resource
+        /// creation. Possible values include: 'Default', 'Restore'</param>
+        public SqlDatabaseResource(string id, ResourceRestoreParameters restoreParameters = default(ResourceRestoreParameters), string createMode = default(string))
         {
             Id = id;
             RestoreParameters = restoreParameters;
@@ -55,14 +55,15 @@ namespace Microsoft.Azure.Management.CosmosDB.Models
         public string Id { get; set; }
 
         /// <summary>
-        /// Gets or sets the standard JSON format of a container
+        /// Gets or sets parameters to indicate the information about the
+        /// restore
         /// </summary>
         [JsonProperty(PropertyName = "restoreParameters")]
-        public RestoreParameters RestoreParameters { get; set; }
+        public ResourceRestoreParameters RestoreParameters { get; set; }
 
         /// <summary>
-        /// Gets or sets the standard JSON format of a container. Possible
-        /// values include: 'Default', 'Restore'
+        /// Gets or sets enum to indicate the mode of resource creation.
+        /// Possible values include: 'Default', 'Restore'
         /// </summary>
         [JsonProperty(PropertyName = "createMode")]
         public string CreateMode { get; set; }

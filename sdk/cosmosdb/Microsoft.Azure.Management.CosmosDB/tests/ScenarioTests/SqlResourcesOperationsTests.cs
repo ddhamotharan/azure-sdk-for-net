@@ -13,6 +13,7 @@ using Microsoft.Rest.Azure.Authentication;
 using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace CosmosDB.Tests.ScenarioTests
 {
@@ -265,9 +266,8 @@ namespace CosmosDB.Tests.ScenarioTests
         }
 
         [Fact]
-        public void SqlInAccountRestoreTest()
+        public async Task SqlInAccountRestoreNormalDatabaseTests()
         {
-           
             using (var context = MockContext.Start(this.GetType()))
             {
                 fixture.Init(context);
@@ -294,7 +294,50 @@ namespace CosmosDB.Tests.ScenarioTests
                 ).GetAwaiter().GetResult().Body;
                 Assert.NotNull(sqlDatabaseGetResults);
                 Assert.Equal(databaseName, sqlDatabaseGetResults.Name);
+                
+                //update with ClientEncryptionKey
+                var clientEncryptionKeyName1 = TestUtilities.GenerateName("clientEncryptionKey");
+                ClientEncryptionKeyResource clientEncryptionKeyResource = new ClientEncryptionKeyResource()
+                {
+                    Id = clientEncryptionKeyName1,
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                    KeyWrapMetadata = new KeyWrapMetadata
+                    {
+                        Type = "akv",
+                        Value = "akvPath",
+                        Name = "cmk",
+                        Algorithm = "algo"
+                    },
+                    WrappedDataEncryptionKey = new byte[] { 0xab, 0x57, 0x05, 0xe9, 0x9f, 0xe2 }
+                };
+                var clientEncryptionKeysFeedResponse = await client.ListClientEncryptionKeysAsync(this.fixture.ResourceGroupName,
+                    databaseAccountName,
+                    databaseName);
+                ClientEncryptionKeyCreateUpdateParameters clientEncryptionKeyCreateUpdateParameters = new ClientEncryptionKeyCreateUpdateParameters
+                {
+                    Resource = clientEncryptionKeyResource
+                };
 
+                await client.CreateUpdateClientEncryptionKeyWithHttpMessagesAsync(
+                    this.fixture.ResourceGroupName,
+                    databaseAccountName,
+                    databaseName,
+                    clientEncryptionKeyName1,
+                    clientEncryptionKeyCreateUpdateParameters);
+
+                Thread.Sleep(10000);
+
+                ClientEncryptionKeyGetResults clientEncryptionKeyRetrieved = client.GetClientEncryptionKeyWithHttpMessagesAsync(
+                    this.fixture.ResourceGroupName,
+                    databaseAccountName,
+                    databaseName,
+                    clientEncryptionKeyName1).GetAwaiter().GetResult().Body;
+                Assert.NotNull(clientEncryptionKeyRetrieved);
+                Assert.Equal(clientEncryptionKeyResource.Id, clientEncryptionKeyRetrieved.Resource.Id);
+                Assert.Equal(clientEncryptionKeyResource.EncryptionAlgorithm, clientEncryptionKeyRetrieved.Resource.EncryptionAlgorithm);
+                Assert.Equal(clientEncryptionKeyResource.KeyWrapMetadata.Name, clientEncryptionKeyRetrieved.Resource.KeyWrapMetadata.Name);
+                Assert.Equal(clientEncryptionKeyResource.KeyWrapMetadata.Algorithm, clientEncryptionKeyRetrieved.Resource.KeyWrapMetadata.Algorithm);
+                
                 // get db
                 SqlDatabaseGetResults sqlDatabaseGetResults2 = client.GetSqlDatabaseWithHttpMessagesAsync(
                     this.fixture.ResourceGroupName,
@@ -306,27 +349,6 @@ namespace CosmosDB.Tests.ScenarioTests
 
                 VerifyEqualSqlDatabases(sqlDatabaseGetResults, sqlDatabaseGetResults2);
                 
-                //update db
-                SqlDatabaseCreateUpdateParameters sqlDatabaseCreateUpdateParameters2 = new SqlDatabaseCreateUpdateParameters
-                {
-                    Location = this.fixture.Location,
-                    Tags = tags,
-                    Resource = new SqlDatabaseResource { Id = databaseName },
-                    Options = new CreateUpdateOptions
-                    {
-                        Throughput = sampleThroughput
-                    }
-                };
-
-                SqlDatabaseGetResults sqlDatabaseGetResults3 = client.CreateUpdateSqlDatabaseWithHttpMessagesAsync(
-                    this.fixture.ResourceGroupName,
-                    databaseAccountName,
-                    databaseName,
-                    sqlDatabaseCreateUpdateParameters2
-                ).GetAwaiter().GetResult().Body;
-                Assert.NotNull(sqlDatabaseGetResults3);
-                Assert.Equal(databaseName, sqlDatabaseGetResults3.Name);
-
                 IEnumerable<SqlDatabaseGetResults> sqlDatabases = client.ListSqlDatabasesWithHttpMessagesAsync(this.fixture.ResourceGroupName, databaseAccountName).GetAwaiter().GetResult().Body;
                 Assert.NotNull(sqlDatabases);
 
@@ -390,7 +412,7 @@ namespace CosmosDB.Tests.ScenarioTests
                 String restoreSource = restorableDatabaseAccount.Id;
 
                 //delete container
-                client.DeleteSqlContainerWithHttpMessagesAsync(this.fixture.ResourceGroupName, databaseAccountName, databaseName,  sqlContainerGetResults.Name);
+                await client.DeleteSqlContainerWithHttpMessagesAsync(this.fixture.ResourceGroupName, databaseAccountName, databaseName, sqlContainerGetResults.Name);
 
                 // restore container
                 SqlContainerCreateUpdateParameters sqlContainerCreateUpdateParameters2 = new SqlContainerCreateUpdateParameters
@@ -398,7 +420,7 @@ namespace CosmosDB.Tests.ScenarioTests
                     Resource = new SqlContainerResource
                     {
                         Id = containerName,
-                        RestoreParameters = new RestoreParameters
+                        RestoreParameters = new ResourceRestoreParameters
                         {
                             RestoreSource = restoreSource,
                             RestoreTimestampInUtc = restoreTimestampInUtc
@@ -417,7 +439,7 @@ namespace CosmosDB.Tests.ScenarioTests
                 VerifyEqualSqlContainers(sqlContainerGetResults, sqlContainerGetResults2);
 
                 //delete database
-                client.DeleteSqlDatabaseWithHttpMessagesAsync(this.fixture.ResourceGroupName, databaseAccountName, databaseName);
+                await client.DeleteSqlDatabaseWithHttpMessagesAsync(this.fixture.ResourceGroupName, databaseAccountName, databaseName);
 
                 //restore database
                 SqlDatabaseCreateUpdateParameters sqlDatabaseCreateUpdateParameters3 = new SqlDatabaseCreateUpdateParameters
@@ -425,7 +447,7 @@ namespace CosmosDB.Tests.ScenarioTests
                     Resource = new SqlDatabaseResource
                     { 
                         Id = databaseName,
-                        RestoreParameters = new RestoreParameters
+                        RestoreParameters = new ResourceRestoreParameters
                         {
                             RestoreSource = restoreSource,
                             RestoreTimestampInUtc = restoreTimestampInUtc
@@ -441,21 +463,214 @@ namespace CosmosDB.Tests.ScenarioTests
                     sqlDatabaseCreateUpdateParameters3
                 ).GetAwaiter().GetResult().Body;
                 Assert.NotNull(sqlDatabaseGetResults4);
-                Assert.Equal(databaseName, sqlDatabaseGetResults4.Name);
+                VerifyEqualSqlDatabases(sqlDatabaseGetResults, sqlDatabaseGetResults4, true);
 
-                IEnumerable<SqlDatabaseGetResults> sqlDatabases = client.ListSqlDatabasesWithHttpMessagesAsync(this.fixture.ResourceGroupName, databaseAccountName).GetAwaiter().GetResult().Body;
+                clientEncryptionKeyRetrieved = client.GetClientEncryptionKeyWithHttpMessagesAsync(
+                    this.fixture.ResourceGroupName,
+                    databaseAccountName,
+                    databaseName,
+                    clientEncryptionKeyName1).GetAwaiter().GetResult().Body;
+                Assert.NotNull(clientEncryptionKeyRetrieved);
+                Assert.Equal(clientEncryptionKeyResource.Id, clientEncryptionKeyRetrieved.Resource.Id);
+                Assert.Equal(clientEncryptionKeyResource.EncryptionAlgorithm, clientEncryptionKeyRetrieved.Resource.EncryptionAlgorithm);
+                Assert.Equal(clientEncryptionKeyResource.KeyWrapMetadata.Name, clientEncryptionKeyRetrieved.Resource.KeyWrapMetadata.Name);
+                //Assert.Equal(clientEncryptionKeyResource.KeyWrapMetadata.Algorithm, clientEncryptionKeyRetrieved.Resource.KeyWrapMetadata.Algorithm);
+
+                sqlDatabases = client.ListSqlDatabasesWithHttpMessagesAsync(this.fixture.ResourceGroupName, databaseAccountName).GetAwaiter().GetResult().Body;
                 Assert.NotNull(sqlDatabases);
-
                 //clean up containers
                 foreach (SqlContainerGetResults sqlContainer in sqlContainers)
                 {
-                    client.DeleteSqlContainerWithHttpMessagesAsync(this.fixture.ResourceGroupName, databaseAccountName, databaseName,  sqlContainer.Name);
+                    await client.DeleteSqlContainerWithHttpMessagesAsync(this.fixture.ResourceGroupName, databaseAccountName, databaseName,  sqlContainer.Name);
                 }
 
                 //clean up databases
                 foreach (SqlDatabaseGetResults sqlDatabase in sqlDatabases)
                 {
-                    client.DeleteSqlDatabaseWithHttpMessagesAsync(this.fixture.ResourceGroupName, databaseAccountName, sqlDatabase.Name);
+                    await client.DeleteSqlDatabaseWithHttpMessagesAsync(this.fixture.ResourceGroupName, databaseAccountName, sqlDatabase.Name);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task SqlInAccountRestoreSharedRUDatabaseTests()
+        {
+            using (var context = MockContext.Start(this.GetType()))
+            {
+                fixture.Init(context);
+                var client = this.fixture.CosmosDBManagementClient.SqlResources;
+
+                var databaseAccountName = this.fixture.GetDatabaseAccountName(TestFixture.AccountType.PitrSql);
+                var restorableAccounts = (await this.fixture.CosmosDBManagementClient.RestorableDatabaseAccounts.ListByLocationAsync(this.fixture.Location)).ToList();
+                var restorableDatabaseAccount = restorableAccounts.
+                    SingleOrDefault(account => account.AccountName.Equals(databaseAccountName, StringComparison.OrdinalIgnoreCase));
+                const int sampleThroughput = 700;
+
+                var databaseName = TestUtilities.GenerateName("database");
+                SqlDatabaseCreateUpdateParameters sqlDatabaseCreateUpdateParameters = new SqlDatabaseCreateUpdateParameters
+                {
+                    Resource = new SqlDatabaseResource {
+                        Id = databaseName
+                    },
+                    Options = new CreateUpdateOptions
+                    {
+                        Throughput = sampleThroughput
+                    }
+                };
+
+                //create db
+                SqlDatabaseGetResults sqlDatabaseCreateResults = client.CreateUpdateSqlDatabaseWithHttpMessagesAsync(
+                    this.fixture.ResourceGroupName,
+                    databaseAccountName,
+                    databaseName,
+                    sqlDatabaseCreateUpdateParameters
+                ).GetAwaiter().GetResult().Body;
+                Assert.NotNull(sqlDatabaseCreateResults);
+                Assert.Equal(databaseName, sqlDatabaseCreateResults.Name);
+
+                // get db
+                SqlDatabaseGetResults sqlDatabaseGetResults = client.GetSqlDatabaseWithHttpMessagesAsync(
+                    this.fixture.ResourceGroupName,
+                    databaseAccountName,
+                    databaseName
+                ).GetAwaiter().GetResult().Body;
+                Assert.NotNull(sqlDatabaseGetResults);
+                Assert.Equal(databaseName, sqlDatabaseGetResults.Name);
+
+                VerifyEqualSqlDatabases(sqlDatabaseCreateResults, sqlDatabaseGetResults);
+
+                IEnumerable<SqlDatabaseGetResults> sqlDatabases = client.ListSqlDatabasesWithHttpMessagesAsync(this.fixture.ResourceGroupName, databaseAccountName).GetAwaiter().GetResult().Body;
+                Assert.NotNull(sqlDatabases);
+
+                // create container
+                var containerName = TestUtilities.GenerateName("container");
+                SqlContainerCreateUpdateParameters sqlContainerCreateUpdateParameters = new SqlContainerCreateUpdateParameters
+                {
+                    Resource = new SqlContainerResource
+                    {
+                        Id = containerName,
+                        PartitionKey = new ContainerPartitionKey
+                        {
+                            Kind = "Hash",
+                            Paths = new List<string> { "/address/zipCode" }
+                        },
+                        IndexingPolicy = new IndexingPolicy
+                        {
+                            Automatic = true,
+                            IndexingMode = IndexingMode.Consistent,
+                            IncludedPaths = new List<IncludedPath>
+                        {
+                            new IncludedPath { Path = "/*"}
+                        },
+                            ExcludedPaths = new List<ExcludedPath>
+                        {
+                            new ExcludedPath { Path = "/pathToNotIndex/*"}
+                        },
+                            CompositeIndexes = new List<IList<CompositePath>>
+                        {
+                            new List<CompositePath>
+                            {
+                                new CompositePath { Path = "/orderByPath1", Order = CompositePathSortOrder.Ascending },
+                                new CompositePath { Path = "/orderByPath2", Order = CompositePathSortOrder.Descending }
+                            },
+                            new List<CompositePath>
+                            {
+                                new CompositePath { Path = "/orderByPath3", Order = CompositePathSortOrder.Ascending },
+                                new CompositePath { Path = "/orderByPath4", Order = CompositePathSortOrder.Descending }
+                            }
+                        }
+                        }
+                    },
+                    Options = new CreateUpdateOptions()
+                };
+
+                SqlContainerGetResults sqlContainerGetResults = client.CreateUpdateSqlContainerWithHttpMessagesAsync(
+                    this.fixture.ResourceGroupName,
+                    databaseAccountName,
+                    databaseName,
+                    containerName,
+                    sqlContainerCreateUpdateParameters).GetAwaiter().GetResult().Body;
+
+                Assert.NotNull(sqlContainerGetResults);
+
+                IEnumerable<SqlContainerGetResults> sqlContainers = client.ListSqlContainersWithHttpMessagesAsync(this.fixture.ResourceGroupName, databaseAccountName, databaseName).GetAwaiter().GetResult().Body;
+                Assert.NotNull(sqlContainers);
+                DateTime restoreTimestampInUtc = DateTime.UtcNow;
+                String restoreSource = restorableDatabaseAccount.Id;
+
+                //delete container
+                await client.DeleteSqlContainerWithHttpMessagesAsync(this.fixture.ResourceGroupName, databaseAccountName, databaseName, sqlContainerGetResults.Name);
+
+                // restore container
+                SqlContainerCreateUpdateParameters sqlContainerCreateUpdateParameters2 = new SqlContainerCreateUpdateParameters
+                {
+                    Resource = new SqlContainerResource
+                    {
+                        Id = containerName,
+                        RestoreParameters = new ResourceRestoreParameters
+                        {
+                            RestoreSource = restoreSource,
+                            RestoreTimestampInUtc = restoreTimestampInUtc
+                        },
+                        CreateMode = CreateMode.Restore
+                    }
+                };
+                try
+                {
+                    SqlContainerGetResults sqlContainerGetResults2 = client.CreateUpdateSqlContainerWithHttpMessagesAsync(
+                    this.fixture.ResourceGroupName,
+                    databaseAccountName,
+                    databaseName,
+                    containerName,
+                    sqlContainerCreateUpdateParameters2).GetAwaiter().GetResult().Body;
+                }
+                catch (Exception ex)
+                {
+                    Assert.Contains("Partial restore of shared throughput data is not allowed. Please perform restore operation on a shared throughput database or a provisioned collection", ex.Message);
+                }
+
+                //delete database
+                await client.DeleteSqlDatabaseWithHttpMessagesAsync(this.fixture.ResourceGroupName, databaseAccountName, databaseName);
+
+                //restore database
+                SqlDatabaseCreateUpdateParameters sqlDatabaseCreateUpdateParametersForRestore = new SqlDatabaseCreateUpdateParameters
+                {
+                    Resource = new SqlDatabaseResource
+                    {
+                        Id = databaseName,
+                        RestoreParameters = new ResourceRestoreParameters
+                        {
+                            RestoreSource = restoreSource,
+                            RestoreTimestampInUtc = restoreTimestampInUtc
+                        },
+                        CreateMode = CreateMode.Restore
+                    }
+                };
+
+                SqlDatabaseGetResults sqlDatabaseGetResultsForRestore = client.CreateUpdateSqlDatabaseWithHttpMessagesAsync(
+                    this.fixture.ResourceGroupName,
+                    databaseAccountName,
+                    databaseName,
+                    sqlDatabaseCreateUpdateParametersForRestore
+                ).GetAwaiter().GetResult().Body;
+                Assert.NotNull(sqlDatabaseGetResultsForRestore);
+                VerifyEqualSqlDatabases(sqlDatabaseGetResults, sqlDatabaseGetResultsForRestore, true);
+
+                sqlDatabases = client.ListSqlDatabasesWithHttpMessagesAsync(this.fixture.ResourceGroupName, databaseAccountName).GetAwaiter().GetResult().Body;
+                Assert.NotNull(sqlDatabases);
+
+                sqlContainers = client.ListSqlContainersWithHttpMessagesAsync(this.fixture.ResourceGroupName, databaseAccountName, databaseName).GetAwaiter().GetResult().Body;
+                Assert.NotNull(sqlContainers);
+                //clean up containers
+                foreach (SqlContainerGetResults sqlContainer in sqlContainers)
+                {
+                    await client.DeleteSqlContainerWithHttpMessagesAsync(this.fixture.ResourceGroupName, databaseAccountName, databaseName, sqlContainer.Name);
+                }
+
+                //clean up databases
+                foreach (SqlDatabaseGetResults sqlDatabase in sqlDatabases)
+                {
+                    await client.DeleteSqlDatabaseWithHttpMessagesAsync(this.fixture.ResourceGroupName, databaseAccountName, sqlDatabase.Name);
                 }
             }
         }
@@ -1204,12 +1419,15 @@ namespace CosmosDB.Tests.ScenarioTests
             Assert.Equal(sqlContainerGetResults.Resource.DefaultTtl, sqlContainerCreateUpdateParameters.Resource.DefaultTtl);
         }
 
-        private void VerifyEqualSqlDatabases(SqlDatabaseGetResults expectedValue, SqlDatabaseGetResults actualValue)
+        private void VerifyEqualSqlDatabases(SqlDatabaseGetResults expectedValue, SqlDatabaseGetResults actualValue, bool isRestore = false)
         {
             Assert.Equal(expectedValue.Resource.Id, actualValue.Resource.Id);
-            Assert.Equal(expectedValue.Resource._rid, actualValue.Resource._rid);
-            Assert.Equal(expectedValue.Resource._ts, actualValue.Resource._ts);
-            Assert.Equal(expectedValue.Resource._etag, actualValue.Resource._etag);
+            if (!isRestore)
+            {
+                Assert.Equal(expectedValue.Resource._rid, actualValue.Resource._rid);
+                Assert.Equal(expectedValue.Resource._ts, actualValue.Resource._ts);
+                Assert.Equal(expectedValue.Resource._etag, actualValue.Resource._etag);
+            }
             Assert.Equal(expectedValue.Resource._colls, actualValue.Resource._colls);
             Assert.Equal(expectedValue.Resource._users, actualValue.Resource._users);
         }

@@ -33,10 +33,10 @@ namespace Microsoft.Azure.Management.CosmosDB.Models
         /// RestorableSqlDatabasePropertiesResourceDatabase class.
         /// </summary>
         /// <param name="id">Name of the Cosmos DB SQL database</param>
-        /// <param name="restoreParameters">The standard JSON format of a
-        /// container</param>
-        /// <param name="createMode">The standard JSON format of a container.
-        /// Possible values include: 'Default', 'Restore'</param>
+        /// <param name="restoreParameters">Parameters to indicate the
+        /// information about the restore</param>
+        /// <param name="createMode">Enum to indicate the mode of resource
+        /// creation. Possible values include: 'Default', 'Restore'</param>
         /// <param name="_rid">A system generated property. A unique
         /// identifier.</param>
         /// <param name="_ts">A system generated property that denotes the last
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Management.CosmosDB.Models
         /// addressable path of the users resource.</param>
         /// <param name="_self">A system generated property that specifies the
         /// addressable path of the database resource.</param>
-        public RestorableSqlDatabasePropertiesResourceDatabase(string id, RestoreParameters restoreParameters = default(RestoreParameters), string createMode = default(string), string _rid = default(string), double? _ts = default(double?), string _etag = default(string), string _colls = default(string), string _users = default(string), string _self = default(string))
+        public RestorableSqlDatabasePropertiesResourceDatabase(string id, ResourceRestoreParameters restoreParameters = default(ResourceRestoreParameters), string createMode = default(string), string _rid = default(string), double? _ts = default(double?), string _etag = default(string), string _colls = default(string), string _users = default(string), string _self = default(string))
         {
             Id = id;
             RestoreParameters = restoreParameters;
@@ -75,14 +75,15 @@ namespace Microsoft.Azure.Management.CosmosDB.Models
         public string Id { get; set; }
 
         /// <summary>
-        /// Gets or sets the standard JSON format of a container
+        /// Gets or sets parameters to indicate the information about the
+        /// restore
         /// </summary>
         [JsonProperty(PropertyName = "restoreParameters")]
-        public RestoreParameters RestoreParameters { get; set; }
+        public ResourceRestoreParameters RestoreParameters { get; set; }
 
         /// <summary>
-        /// Gets or sets the standard JSON format of a container. Possible
-        /// values include: 'Default', 'Restore'
+        /// Gets or sets enum to indicate the mode of resource creation.
+        /// Possible values include: 'Default', 'Restore'
         /// </summary>
         [JsonProperty(PropertyName = "createMode")]
         public string CreateMode { get; set; }

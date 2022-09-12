@@ -45,11 +45,11 @@ namespace Microsoft.Azure.Management.CosmosDB.Models
         /// <param name="clientEncryptionPolicy">The client encryption policy
         /// for the container.</param>
         /// <param name="analyticalStorageTtl">Analytical TTL.</param>
-        /// <param name="restoreParameters">The standard JSON format of a
-        /// container</param>
-        /// <param name="createMode">The standard JSON format of a container.
-        /// Possible values include: 'Default', 'Restore'</param>
-        public SqlContainerResource(string id, IndexingPolicy indexingPolicy = default(IndexingPolicy), ContainerPartitionKey partitionKey = default(ContainerPartitionKey), int? defaultTtl = default(int?), UniqueKeyPolicy uniqueKeyPolicy = default(UniqueKeyPolicy), ConflictResolutionPolicy conflictResolutionPolicy = default(ConflictResolutionPolicy), ClientEncryptionPolicy clientEncryptionPolicy = default(ClientEncryptionPolicy), long? analyticalStorageTtl = default(long?), RestoreParameters restoreParameters = default(RestoreParameters), string createMode = default(string))
+        /// <param name="restoreParameters">Parameters to indicate the
+        /// information about the restore</param>
+        /// <param name="createMode">Enum to indicate the mode of resource
+        /// creation. Possible values include: 'Default', 'Restore'</param>
+        public SqlContainerResource(string id, IndexingPolicy indexingPolicy = default(IndexingPolicy), ContainerPartitionKey partitionKey = default(ContainerPartitionKey), int? defaultTtl = default(int?), UniqueKeyPolicy uniqueKeyPolicy = default(UniqueKeyPolicy), ConflictResolutionPolicy conflictResolutionPolicy = default(ConflictResolutionPolicy), ClientEncryptionPolicy clientEncryptionPolicy = default(ClientEncryptionPolicy), long? analyticalStorageTtl = default(long?), ResourceRestoreParameters restoreParameters = default(ResourceRestoreParameters), string createMode = default(string))
         {
             Id = id;
             IndexingPolicy = indexingPolicy;
@@ -123,14 +123,15 @@ namespace Microsoft.Azure.Management.CosmosDB.Models
         public long? AnalyticalStorageTtl { get; set; }
 
         /// <summary>
-        /// Gets or sets the standard JSON format of a container
+        /// Gets or sets parameters to indicate the information about the
+        /// restore
         /// </summary>
         [JsonProperty(PropertyName = "restoreParameters")]
-        public RestoreParameters RestoreParameters { get; set; }
+        public ResourceRestoreParameters RestoreParameters { get; set; }
 
         /// <summary>
-        /// Gets or sets the standard JSON format of a container. Possible
-        /// values include: 'Default', 'Restore'
+        /// Gets or sets enum to indicate the mode of resource creation.
+        /// Possible values include: 'Default', 'Restore'
         /// </summary>
         [JsonProperty(PropertyName = "createMode")]
         public string CreateMode { get; set; }

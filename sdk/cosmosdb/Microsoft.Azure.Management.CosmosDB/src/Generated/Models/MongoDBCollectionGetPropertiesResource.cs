@@ -36,17 +36,17 @@ namespace Microsoft.Azure.Management.CosmosDB.Models
         /// for the request.</param>
         /// <param name="indexes">List of index keys</param>
         /// <param name="analyticalStorageTtl">Analytical TTL.</param>
-        /// <param name="restoreParameters">The standard JSON format of a
-        /// container</param>
-        /// <param name="createMode">The standard JSON format of a container.
-        /// Possible values include: 'Default', 'Restore'</param>
+        /// <param name="restoreParameters">Parameters to indicate the
+        /// information about the restore</param>
+        /// <param name="createMode">Enum to indicate the mode of resource
+        /// creation. Possible values include: 'Default', 'Restore'</param>
         /// <param name="_rid">A system generated property. A unique
         /// identifier.</param>
         /// <param name="_ts">A system generated property that denotes the last
         /// updated timestamp of the resource.</param>
         /// <param name="_etag">A system generated property representing the
         /// resource etag required for optimistic concurrency control.</param>
-        public MongoDBCollectionGetPropertiesResource(string id, IDictionary<string, string> shardKey = default(IDictionary<string, string>), IList<MongoIndex> indexes = default(IList<MongoIndex>), int? analyticalStorageTtl = default(int?), RestoreParameters restoreParameters = default(RestoreParameters), string createMode = default(string), string _rid = default(string), double? _ts = default(double?), string _etag = default(string))
+        public MongoDBCollectionGetPropertiesResource(string id, IDictionary<string, string> shardKey = default(IDictionary<string, string>), IList<MongoIndex> indexes = default(IList<MongoIndex>), int? analyticalStorageTtl = default(int?), ResourceRestoreParameters restoreParameters = default(ResourceRestoreParameters), string createMode = default(string), string _rid = default(string), double? _ts = default(double?), string _etag = default(string))
         {
             Id = id;
             ShardKey = shardKey;
@@ -91,14 +91,15 @@ namespace Microsoft.Azure.Management.CosmosDB.Models
         public int? AnalyticalStorageTtl { get; set; }
 
         /// <summary>
-        /// Gets or sets the standard JSON format of a container
+        /// Gets or sets parameters to indicate the information about the
+        /// restore
         /// </summary>
         [JsonProperty(PropertyName = "restoreParameters")]
-        public RestoreParameters RestoreParameters { get; set; }
+        public ResourceRestoreParameters RestoreParameters { get; set; }
 
         /// <summary>
-        /// Gets or sets the standard JSON format of a container. Possible
-        /// values include: 'Default', 'Restore'
+        /// Gets or sets enum to indicate the mode of resource creation.
+        /// Possible values include: 'Default', 'Restore'
         /// </summary>
         [JsonProperty(PropertyName = "createMode")]
         public string CreateMode { get; set; }
