@@ -314,7 +314,7 @@
         "x-ms-routing-request-id": "EASTUS:20230417T092130Z:5294f163-c91e-4321-816c-43204aa566e1"
       },
       "ResponseBody": {
-        "status": "Enqueued"
+        "status": "Dequeued"
       }
     },
     {
@@ -5283,8 +5283,8 @@
         "type": "Microsoft.DocumentDB/databaseAccounts",
         "kind": "MongoDB",
         "tags": {
-          "key1": "value1",
-          "key2": "value2"
+          "key3": "value3",
+          "key4": "value4"
         },
         "systemData": {
           "createdAt": "2023-04-17T09:26:08.9652599Z"
@@ -5295,13 +5295,13 @@
           "sqlEndpoint": "https://dbaccount-6639.documents.azure.com:443/",
           "mongoEndpoint": "https://dbaccount-6639.mongo.cosmos.azure.com:443/",
           "publicNetworkAccess": "Enabled",
-          "enableAutomaticFailover": false,
+          "enableAutomaticFailover": true,
           "enableMultipleWriteLocations": false,
           "enablePartitionKeyMonitor": false,
-          "isVirtualNetworkFilterEnabled": true,
+          "isVirtualNetworkFilterEnabled": false,
           "virtualNetworkRules": [],
           "EnabledApiTypes": "MongoDB",
-          "disableKeyBasedMetadataWriteAccess": false,
+          "disableKeyBasedMetadataWriteAccess": true,
           "enableFreeTier": false,
           "enableAnalyticalStorage": false,
           "analyticalStorageConfiguration": {
